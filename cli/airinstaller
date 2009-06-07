@@ -29,7 +29,7 @@ sub get_appinfo
 {
 	my $zip = Archive::Zip->new();
 	print "[installer] Getting air application info...\n";
-	$zip->read($_[0]) == AZ_OK or die "Can't read air archive: $1\n";
+	$zip->read($_[0]) == AZ_OK or die "Can't read air archive: $!\n";
 	my $fh = Archive::Zip::MemberRead->new($zip, 'META-INF/AIR/application.xml');
 	my $line = '';
 	my %hash;
