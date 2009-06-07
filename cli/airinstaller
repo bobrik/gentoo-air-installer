@@ -37,21 +37,57 @@ sub get_appinfo
 	{
 		if ($line =~ /<name>(.*)<\/name>/)
 		{
-			$hash{'name'} = $1;
+			$hash{'Name'} = $1;
 		} elsif ($line =~ /<description>(.*)<\/description>/)
 		{
-			$hash{'description'} = $1;
+			$hash{'Description'} = $1;
+		} elsif ($line =~ /<version>(.*)<\/version>/)
+		{
+			$hash{'Version'} = $1;
 		} elsif ($line =~ /<image(\d{2,3})x\1>(.*)<\/image\1x\1>/)
 		{
-			push(@{$hash{'icons'}}, $2);
+			$hash{'icons'}->{$1} = $2;
 		}
 	}
 	$fh->close();
-	if (!defined($hash{'name'}))
+	if (!defined($hash{'Name'}))
 	{
 		die "[error] not valid air package!\n";
 	}
 	return \%hash;
+}
+
+sub generate_desktop
+{
+	my $hash = $_[0];
+	my $desktop = "[Desktop Entry]\n";
+	foreach(('Name', 'Description', 'Version'))
+	{
+		$desktop .= $_.'='.$hash->{$_}."\n"
+	}
+	$desktop .= "Type=Application\n";
+	$desktop .= "Categories=Utility;\n";
+	$desktop .= "Exec=airstart $hash->{'Name'}\n";
+	if (defined($hash->{'icons'}))
+	{
+		my @sizes = keys %{$hash->{'icons'}};
+		my $max = $sizes[0];
+		foreach (@sizes)
+		{
+			$max = $_ if $_ > $max;
+		}
+		$desktop .= "Icon=$hash->{'Name'}\n";
+		$hash->{'icons'}->{$max} =~ /.*\.(.+)/;
+		my $ext = '.'.$1;
+		use File::Copy;
+		copy($install_dest.'/'.$hash->{'Name'}.'/'.$hash->{'icons'}->{$max}, '/usr/share/pixmaps/'.$hash->{'Name'}.$ext)
+			or die "[error] can't copy icon file: $!\n";
+	}
+	print '/usr/share/applications/adobe_air_'.$hash->{'Name'}.'.desktop\n\n';
+	open(DESKTOP, '>/usr/share/applications/adobe_air_'.$hash->{'Name'}.'.desktop')
+		or die "[error] can't write desktop file: $!\n";
+	print DESKTOP $desktop;
+	close(DESKTOP) or die "[error] can't write desktop file: $1\n";
 }
 
 sub set_options
@@ -84,4 +120,5 @@ if (!-f $ARGV[0])
 	die "[error] can't open air package!\n";
 }
 
-get_appinfo($ARGV[0]);
+my $hash = get_appinfo($ARGV[0]);
+generate_desktop($hash);
