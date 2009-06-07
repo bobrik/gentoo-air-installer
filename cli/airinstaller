@@ -83,11 +83,28 @@ sub generate_desktop
 		copy($install_dest.'/'.$hash->{'Name'}.'/'.$hash->{'icons'}->{$max}, '/usr/share/pixmaps/'.$hash->{'Name'}.$ext)
 			or die "[error] can't copy icon file: $!\n";
 	}
-	print '/usr/share/applications/adobe_air_'.$hash->{'Name'}.'.desktop\n\n';
 	open(DESKTOP, '>/usr/share/applications/adobe_air_'.$hash->{'Name'}.'.desktop')
 		or die "[error] can't write desktop file: $!\n";
 	print DESKTOP $desktop;
 	close(DESKTOP) or die "[error] can't write desktop file: $1\n";
+}
+
+sub install_package
+{
+	$hash = $_[1];
+	if (!-d $install_dest)
+	{
+		die "[error] installation root does not exist: $install_dest\n"
+	}
+	print "[installer] installing package to $install_dest/$hash->{'Name'}\n";
+	my $zip = Archive::Zip->new();
+	$zip->read($_[0]) == AZ_OK or die "Can't read air archive: $!\n";
+	if (-d $install_dest.'/'.$hash->{'Name'})
+	{
+		die "[error] directory $install_dest/$hash->{'Name'} already exists! please remove it first!\n";
+	}
+	mkdir($install_dest.'/'.$hash->{'Name'}) or die "[error] can't create $install_dest/$hash->{'Name'}: $!\n";
+	$zip->extractTree('', $install_dest.'/'.$hash->{'Name'}.'/') == AZ_OK or die "[error] can't install package!";
 }
 
 sub set_options
@@ -121,4 +138,8 @@ if (!-f $ARGV[0])
 }
 
 my $hash = get_appinfo($ARGV[0]);
-generate_desktop($hash);
+install_package($ARGV[0], $hash);
+if ($install_desktop)
+{
+	generate_desktop($hash);
+}
