@@ -33,20 +33,24 @@ sub get_appinfo
 	my $fh = Archive::Zip::MemberRead->new($zip, 'META-INF/AIR/application.xml');
 	my $line = '';
 	my %hash;
+	# incorrect handling if file have commented xml at the beginning
 	while (defined($line = $fh->getline()))
 	{
-		if ($line =~ /<name>(.*)<\/name>/)
+		if (!defined($hash{'Name'}) and $line =~ /<name>(.*)<\/name>/)
 		{
 			$hash{'Name'} = $1;
-		} elsif ($line =~ /<description>(.*)<\/description>/)
+		} elsif (!defined($hash{'Description'}) and $line =~ /<description>(.*)<\/description>/)
 		{
 			$hash{'Description'} = $1;
-		} elsif ($line =~ /<version>(.*)<\/version>/)
+		} elsif (!defined($hash{'Version'}) and $line =~ /<version>(.*)<\/version>/)
 		{
 			$hash{'Version'} = $1;
 		} elsif ($line =~ /<image(\d{2,3})x\1>(.*)<\/image\1x\1>/)
 		{
-			$hash{'icons'}->{$1} = $2;
+			if (!defined($hash{'icons'}->{$1}))
+			{
+				$hash{'icons'}->{$1} = $2;
+			}
 		}
 	}
 	$fh->close();
