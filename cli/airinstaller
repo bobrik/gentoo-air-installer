@@ -72,6 +72,7 @@ sub generate_desktop
 	$desktop .= "Type=Application\n";
 	$desktop .= "Categories=Utility;\n";
 	$desktop .= "Exec=airstart $hash->{'Name'}\n";
+	my $icon = 0;
 	if (defined($hash->{'icons'}))
 	{
 		my @sizes = keys %{$hash->{'icons'}};
@@ -84,6 +85,7 @@ sub generate_desktop
 		$hash->{'icons'}->{$max} =~ /.*\.(.+)/;
 		my $ext = '.'.$1;
 		use File::Copy;
+		$icon = '/usr/share/pixmaps/'.$hash->{'Name'}.$ext;
 		copy($install_dest.'/'.$hash->{'Name'}.'/'.$hash->{'icons'}->{$max}, '/usr/share/pixmaps/'.$hash->{'Name'}.$ext)
 			or die "[error] can't copy icon file: $!\n";
 	}
@@ -91,6 +93,13 @@ sub generate_desktop
 		or die "[error] can't write desktop file: $!\n";
 	print DESKTOP $desktop;
 	close(DESKTOP) or die "[error] can't write desktop file: $1\n";
+	open(PACKAGEINFO, '>'.$install_dest.'/'.$hash->{'Name'}.'/airpackageinfo') or die "[error] can't write package info: $!\n";
+	print PACKAGEINFO "/usr/share/applications/adobe_air_$hash->{'Name'}.desktop\n";
+	if ($icon)
+	{
+		print PACKAGEINFO "$icon\n";
+	}
+	close(PACKAGEINFO);
 }
 
 sub install_package
